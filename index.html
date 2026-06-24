@@ -4,6 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>AIM HIGH × RICH DIVINE — 깜짝 이벤트</title>
+<meta property="og:type"         content="website">
+<meta property="og:url"          content="https://fsc-git.github.io/RD-Quiz-Event-0624/">
+<meta property="og:title"        content="여러분과 자산가와의 거리는 얼마 정도일까요?">
+<meta property="og:description"  content="전 문항을 맞추시면 특별한 선물의 기회를 드립니다!">
+<meta property="og:image"        content="https://fsc-git.github.io/RD-Quiz-Event-0624/thumbnail.png">
+<meta property="og:image:width"  content="1200">
+<meta property="og:image:height" content="630">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@500;700;900&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
@@ -352,7 +359,7 @@
       <div class="rules">
         <div class="rules-head">이벤트 안내</div>
         <ul>
-          <li>총 <b>4문항</b>이 출제됩니다.</li>
+          <li>총 <b>5문항</b>이 출제됩니다.</li>
           <li><b>전 문항 정답</b>을 맞힌 참가자 중 <b>추첨을 통해 3명</b>에게 무료 수강 자격을 드립니다.</li>
           <li>문항을 풀어가는 과정에서 강의에서 다루는 핵심 내용을 미리 경험하실 수 있습니다.</li>
         </ul>
@@ -394,7 +401,7 @@
         <p class="desc">추첨 응모가 완료되었습니다.<br>전 문항 정답자 중 <b>추첨을 통해 3명</b>에게 무료 수강 자격이 부여됩니다.</p>
 
         <div class="rank-box">
-          <div class="rank-row"><span>응시 결과</span><b id="pass-score">4 / 4</b></div>
+          <div class="rank-row"><span>응시 결과</span><b id="pass-score">5 / 5</b></div>
           <div class="rank-row"><span>응모 번호</span><b id="entry-number">—</b></div>
           <div class="rank-row"><span>추첨 안내</span><b>강의 신청 후 결과 개별 연락</b></div>
         </div>
@@ -418,7 +425,8 @@
         <p class="desc">전 문항 정답자에게만 추첨 응모 자격이 드립니다.<br>모든 핵심을 담은 실무적인 자산가 타겟 강의를 원하시면, 아래 버튼을 눌러 강의를 살펴보세요!</p>
 
         <div class="rank-box">
-          <div class="rank-row"><span>응시 결과</span><b id="partial-score">0 / 4</b></div>
+          <div class="rank-row"><span>응시 결과</span><b id="partial-score">0 / 5</b></div>
+          <div class="rank-row"><span>레벨</span><b id="partial-level">—</b></div>
         </div>
 
         <a class="cta-btn" id="cta-info" href="https://aim-high.biz/course/offline-course-260711rd/?mark=Q" target="_blank" rel="noopener">강의 안내 보러가기 →</a>
@@ -456,6 +464,12 @@
       answer: 0,
       explain: "홈페이지 메인 이미지의 안경은 주황색입니다. 혹시 아직 홈페이지를 방문 안 해보셨다면, 강의 안내도 꼭 확인해보세요!"
     },
+    {
+      q: "7월 토요특강 홈페이지에서 최은주 강사의 노블리치 센터 경력은 몇 년인가요?",
+      options: ["25년", "20년", "15년", "10년"],
+      answer: 2,
+      explain: "최은주 강사의 노블리치 센터 경력은 15년입니다. 홈페이지에서 더 자세한 강사 소개를 확인해보세요!"
+    },
   ];
 
   // ===== 미달 레벨 =====
@@ -463,6 +477,10 @@
     {
       title: '자산가와의 거리, 아직 멀리 있습니다',
       desc:  '자산가 고객이 아직 낯선 단계입니다'
+    },
+    {
+      title: '자산가와의 거리, 가까워지고 있습니다',
+      desc:  '자산가 고객의 핵심에 가까워지고 있습니다. 다만 깊이가 더 필요한 단계입니다'
     },
     {
       title: '자산가와의 거리, 가까워지고 있습니다',
@@ -567,6 +585,7 @@
       document.getElementById('partial-title').textContent = lv.title;
       document.getElementById('level-desc').textContent    = lv.desc;
       document.getElementById('partial-score').textContent = `${correctCount} / ${QUIZ.length}`;
+      document.getElementById('partial-level').textContent = lv.title.replace('자산가와의 거리, ', '');
       showScreen('partial');
     }
   }
