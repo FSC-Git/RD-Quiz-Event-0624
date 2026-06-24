@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AIM HIGH × RICH DIVINE — 깜짝 이벤트</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@500;700;900&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:         #F2F4F6;
+    --card:       #FFFFFF;
+    --teal:       #00C2B2;
+    --teal-lo:    rgba(0,194,178,0.09);
+    --teal-mid:   rgba(0,194,178,0.18);
+    --navy:       #191F28;
+    --muted:      #6B7684;
+    --muted-2:    #9BA8B4;
+    --line:       #E5E8EB;
+    --crimson:    #E05A52;
+    --crimson-lo: rgba(224,90,82,0.08);
+    --gold:       #F0A500;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    font-family: 'Noto Sans KR', sans-serif;
+    color: var(--navy);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 16px;
+  }
+
+  /* 폭죽 캔버스 */
+  #confetti-canvas {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 999;
+    display: none;
+  }
+
+  .doc {
+    width: 100%;
+    max-width: 540px;
+    background: var(--card);
+    border-radius: 16px;
+    box-shadow:
+      0 2px 4px rgba(0,0,0,0.04),
+      0 12px 40px rgba(0,0,0,0.10);
+    overflow: hidden;
+  }
+
+  /* 헤더 */
+  .doc-header {
+    background: var(--navy);
+    padding: 14px 28px;
+    text-align: center;
+  }
+  .doc-header .brand {
+    font-size: 10.5px;
+    letter-spacing: 0.13em;
+    color: rgba(255,255,255,0.5);
+    text-transform: uppercase;
+  }
+
+  .doc-inner { padding: 32px 28px 36px; }
+
+  /* 인트로 */
+  h1.title {
+    font-family: 'Noto Serif KR', serif;
+    font-weight: 900;
+    font-size: 26px;
+    line-height: 1.45;
+    margin: 0 0 10px;
+    color: var(--navy);
+  }
+  .title .accent { color: var(--teal); }
+
+  .subtitle {
+    font-size: 14px;
+    color: var(--muted);
+    line-height: 1.75;
+    margin: 0 0 28px;
+  }
+  .subtitle b { color: var(--navy); font-weight: 700; }
+
+  /* 이벤트 안내 */
+  .rules {
+    background: var(--bg);
+    border-radius: 12px;
+    padding: 18px 20px 16px;
+    margin-bottom: 24px;
+  }
+  .rules-head {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--teal);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  .rules ul {
+    margin: 0; padding: 0;
+    list-style: none;
+    font-size: 13.5px;
+    line-height: 1.85;
+    color: var(--muted);
+  }
+  .rules ul li { padding-left: 16px; position: relative; }
+  .rules ul li::before {
+    content: "·";
+    position: absolute;
+    left: 3px;
+    color: var(--teal);
+    font-weight: 900;
+    font-size: 16px;
+    line-height: 1.5;
+  }
+  .rules li b { color: var(--navy); font-weight: 700; }
+
+  .start-btn {
+    width: 100%;
+    padding: 16px 0;
+    background: var(--teal);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-weight: 700;
+    font-size: 15px;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    transition: background .15s ease, box-shadow .15s ease, transform .1s ease;
+  }
+  .start-btn:hover { background: #00A89A; box-shadow: 0 4px 16px rgba(0,194,178,0.28); }
+  .start-btn:active { transform: scale(0.99); }
+  .start-btn:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+
+  /* 퀴즈 화면 */
+  .quiz-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  .quiz-tag { font-size: 12px; font-weight: 700; color: var(--teal); letter-spacing: 0.04em; }
+  .quiz-score { font-size: 12px; color: var(--muted); }
+
+  .progress-track { display: flex; gap: 6px; margin-bottom: 26px; }
+  .progress-dot {
+    flex: 1; height: 4px;
+    background: var(--line);
+    border-radius: 4px;
+    transition: background .2s ease;
+  }
+  .progress-dot.done { background: var(--teal); }
+  .progress-dot.now  { background: var(--teal); opacity: 0.45; }
+
+  .q-number {
+    font-size: 12px; font-weight: 700;
+    color: var(--teal); letter-spacing: 0.06em;
+    margin-bottom: 8px; text-transform: uppercase;
+  }
+  .q-text {
+    font-family: 'Noto Serif KR', serif;
+    font-weight: 700; font-size: 18px;
+    line-height: 1.6; margin: 0 0 20px;
+    min-height: 54px; color: var(--navy);
+  }
+
+  .options { display: flex; flex-direction: column; gap: 8px; margin-bottom: 6px; }
+  .opt {
+    display: flex; align-items: center; gap: 12px;
+    text-align: left;
+    border: 1.5px solid var(--line);
+    background: var(--card);
+    border-radius: 10px;
+    padding: 13px 16px;
+    font-size: 14px; color: var(--navy);
+    cursor: pointer;
+    transition: border-color .12s ease, background .12s ease;
+  }
+  .opt:hover { border-color: var(--teal); background: var(--teal-lo); }
+  .opt:focus-visible { outline: 3px solid var(--gold); outline-offset: 1px; }
+  .opt .mark {
+    width: 24px; height: 24px;
+    border: 1.5px solid var(--line);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700;
+    flex-shrink: 0; color: var(--muted);
+    transition: all .12s ease;
+  }
+  .opt:hover .mark { border-color: var(--teal); color: var(--teal); }
+  .opt.correct { border-color: var(--teal); background: var(--teal-lo); }
+  .opt.correct .mark { background: var(--teal); color: #fff; border-color: var(--teal); }
+  .opt.wrong { border-color: var(--crimson); background: var(--crimson-lo); }
+  .opt.wrong .mark { background: var(--crimson); color: #fff; border-color: var(--crimson); }
+  .opt[disabled] { cursor: default; }
+  .opt:not(.correct):not(.wrong)[disabled] { opacity: 0.38; }
+
+  .feedback {
+    margin-top: 14px; padding: 14px 16px;
+    border-radius: 10px;
+    background: var(--teal-lo);
+    border: 1.5px solid rgba(0,194,178,0.22);
+    font-size: 13px; line-height: 1.75;
+    color: var(--muted); display: none;
+  }
+  .feedback.show { display: block; }
+  .feedback .fb-label { font-weight: 700; font-size: 12.5px; margin-bottom: 5px; color: var(--teal); }
+  .feedback.miss { background: var(--crimson-lo); border-color: rgba(224,90,82,0.2); }
+  .feedback.miss .fb-label { color: var(--crimson); }
+
+  .next-btn {
+    width: 100%; margin-top: 18px; padding: 14px 0;
+    background: var(--navy); color: #fff;
+    border: none; border-radius: 10px;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-weight: 700; font-size: 14px;
+    letter-spacing: 0.02em; cursor: pointer;
+    display: none; transition: background .15s ease;
+  }
+  .next-btn.show { display: block; }
+  .next-btn:hover { background: #2C3A4A; }
+  .next-btn:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+
+  /* 결과 화면 */
+  .result { text-align: center; }
+  .stamp-wrap {
+    display: flex; justify-content: center;
+    margin: 4px 0 20px; height: 130px; align-items: center;
+  }
+  .stamp {
+    width: 116px; height: 116px;
+    border-radius: 50%;
+    border: 3px solid var(--teal);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    color: var(--teal);
+    transform: rotate(-12deg) scale(0);
+    animation: stampIn .5s cubic-bezier(.2,1.4,.4,1) forwards;
+    position: relative;
+    background: var(--teal-lo);
+  }
+  .stamp::before {
+    content: "";
+    position: absolute; inset: 8px;
+    border: 1.5px dashed rgba(0,194,178,0.45);
+    border-radius: 50%;
+  }
+  .stamp .s1 { font-family: 'Noto Serif KR', serif; font-weight: 900; font-size: 24px; letter-spacing: 0.04em; }
+  .stamp .s2 { font-size: 10px; letter-spacing: 0.18em; margin-top: 4px; opacity: 0.7; }
+  .stamp.miss { border-color: var(--muted-2); color: var(--muted-2); background: rgba(0,0,0,0.02); }
+  .stamp.miss::before { border-color: var(--muted-2); opacity: 0.4; }
+
+  @keyframes stampIn {
+    0%   { transform: rotate(-12deg) scale(2.2); opacity: 0; }
+    60%  { opacity: 1; }
+    100% { transform: rotate(-12deg) scale(1); opacity: 1; }
+  }
+
+  .result h2 {
+    font-family: 'Noto Serif KR', serif;
+    font-weight: 900; font-size: 22px;
+    margin: 0 0 8px; color: var(--navy);
+  }
+  .level-desc {
+    font-size: 14px; font-weight: 700;
+    color: var(--teal);
+    line-height: 1.65;
+    margin: 0 0 10px; padding: 0 4px;
+  }
+  .result p.desc {
+    font-size: 13.5px; color: var(--muted);
+    line-height: 1.8; margin: 0 0 24px; padding: 0 4px;
+  }
+  .result p.desc b { color: var(--teal); font-weight: 700; }
+
+  .rank-box {
+    border: 1.5px solid var(--line);
+    border-radius: 12px;
+    background: var(--bg);
+    padding: 18px 20px;
+    margin-bottom: 20px; text-align: left;
+  }
+  .rank-row {
+    display: flex; justify-content: space-between;
+    align-items: center; font-size: 13px;
+    padding: 7px 0; color: var(--muted);
+  }
+  .rank-row + .rank-row { border-top: 1px solid var(--line); }
+  .rank-row b { color: var(--navy); font-weight: 700; }
+
+  .cta-btn {
+    display: block; width: 100%; padding: 16px 0;
+    background: var(--teal); color: #fff;
+    text-decoration: none; border-radius: 10px;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-weight: 700; font-size: 15px;
+    letter-spacing: 0.02em; text-align: center;
+    transition: background .15s ease, box-shadow .15s ease;
+  }
+  .cta-btn:hover { background: #00A89A; box-shadow: 0 4px 16px rgba(0,194,178,0.28); }
+  .cta-btn:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+
+  .cta-sub {
+    margin-top: 14px; border: none; background: none;
+    color: var(--muted); font-size: 12.5px;
+    text-decoration: underline; cursor: pointer;
+    font-family: 'Noto Sans KR', sans-serif;
+    transition: color .12s ease;
+  }
+  .cta-sub:hover { color: var(--navy); }
+
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .stamp { animation: none; transform: rotate(-12deg) scale(1); opacity: 1; }
+  }
+  @media (max-width: 480px) {
+    .doc-inner { padding: 24px 20px 30px; }
+    .doc-header { padding: 12px 20px; }
+    h1.title { font-size: 23px; }
+    .q-text { font-size: 16.5px; }
+  }
+</style>
+</head>
+<body>
+
+<canvas id="confetti-canvas"></canvas>
+
+<div class="doc">
+
+  <div class="doc-header">
+    <span class="brand">RICHDIVINE × AIMHIGH 콜라보 이벤트</span>
+  </div>
+
+  <div class="doc-inner">
+
+    <!-- SCREEN 1: INTRO -->
+    <section class="screen active" id="screen-intro">
+      <h1 class="title">여러분과 자산가와의 거리는<br><span class="accent">얼마 정도일까요?</span></h1>
+      <p class="subtitle">당신은 고액 자산가들이 무엇을 원하는지 얼마나 알고 계신가요?<br><b>전 문항을 맞추시면 특별한 선물의 기회를 드립니다!</b></p>
+
+      <div class="rules">
+        <div class="rules-head">이벤트 안내</div>
+        <ul>
+          <li>총 <b>3문항</b>이 출제됩니다.</li>
+          <li><b>전 문항 정답</b>을 맞힌 참가자 중 <b>추첨을 통해 3명</b>에게 무료 수강 자격을 드립니다.</li>
+          <li>문항을 풀어가는 과정에서 강의에서 다루는 핵심 내용을 미리 경험하실 수 있습니다.</li>
+        </ul>
+      </div>
+
+      <button class="start-btn" id="btn-start">퀴즈 풀어보기</button>
+    </section>
+
+    <!-- SCREEN 2: QUIZ -->
+    <section class="screen" id="screen-quiz">
+      <div class="quiz-head">
+        <span class="quiz-tag" id="quiz-tag">문항 1 / 3</span>
+        <span class="quiz-score" id="quiz-score">정답 0개</span>
+      </div>
+      <div class="progress-track" id="progress-track"></div>
+
+      <div class="q-number" id="q-number">Q1.</div>
+      <h2 class="q-text" id="q-text"></h2>
+      <div class="options" id="options"></div>
+
+      <div class="feedback" id="feedback">
+        <div class="fb-label" id="fb-label"></div>
+        <div id="fb-body"></div>
+      </div>
+
+      <button class="next-btn" id="btn-next">다음 문항</button>
+    </section>
+
+    <!-- SCREEN 3: RESULT - PASS -->
+    <section class="screen" id="screen-pass">
+      <div class="result">
+        <div class="stamp-wrap">
+          <div class="stamp">
+            <div class="s1">合 格</div>
+            <div class="s2">PASS</div>
+          </div>
+        </div>
+        <h2>전 문항 정답입니다! 🎉</h2>
+        <p class="desc">추첨 응모가 완료되었습니다.<br>전 문항 정답자 중 <b>추첨을 통해 3명</b>에게 무료 수강 자격이 부여됩니다.</p>
+
+        <div class="rank-box">
+          <div class="rank-row"><span>응시 결과</span><b id="pass-score">3 / 3</b></div>
+          <div class="rank-row"><span>응모 번호</span><b id="entry-number">—</b></div>
+          <div class="rank-row"><span>추첨 안내</span><b>강의 신청 후 결과 개별 연락</b></div>
+        </div>
+
+        <a class="cta-btn" id="cta-apply" href="https://forms.gle/RKUfd73xEtCpRsAR8" target="_blank" rel="noopener">무료 수강 추첨 신청하기 →</a>
+        <button class="cta-sub" id="btn-retry-pass">처음으로 돌아가기</button>
+      </div>
+    </section>
+
+    <!-- SCREEN 4: RESULT - PARTIAL -->
+    <section class="screen" id="screen-partial">
+      <div class="result">
+        <div class="stamp-wrap">
+          <div class="stamp miss">
+            <div class="s1">미 달</div>
+            <div class="s2">RETRY</div>
+          </div>
+        </div>
+        <h2 id="partial-title">자산가와의 거리, 아직 멀리 있습니다</h2>
+        <p class="level-desc" id="level-desc">자산가 고객이 아직 낯선 단계입니다</p>
+        <p class="desc">전 문항 정답자에게만 추첨 응모 자격이 드립니다.<br>모든 핵심을 담은 실무적인 자산가 타겟 강의를 원하시면, 아래 버튼을 눌러 강의를 살펴보세요!</p>
+
+        <div class="rank-box">
+          <div class="rank-row"><span>응시 결과</span><b id="partial-score">0 / 3</b></div>
+        </div>
+
+        <a class="cta-btn" id="cta-info" href="https://aim-high.biz/course/offline-course-260711rd/?mark=Q" target="_blank" rel="noopener">강의 안내 보러가기 →</a>
+        <button class="cta-sub" id="btn-retry-partial">다시 응시하기</button>
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<script>
+  // ===== 퀴즈 데이터 =====
+  const QUIZ = [
+    {
+      q: "고객 상담 시 재무적 요소도 중요하지만, _____ 요소가 핵심이다",
+      options: ["감정적", "행동적", "비재무적", "관계적"],
+      answer: 2,
+      explain: "자산가 상담에서는 수익률이나 절세 구조보다 가족 관계, 사업 계승, 심리적 안도감 등 비재무적 요소가 실제 의사결정에 더 큰 영향을 미칩니다."
+    },
+    {
+      q: "가족 간의 _____을 걱정하는 사업체 오너가 증가하고 있다",
+      options: ["갈등", "분쟁", "불화", "단절"],
+      answer: 1,
+      explain: "'갈등'과 '불화'는 감정적 충돌이지만, '분쟁'은 상속·지분·사업 양도 등 법적·경제적 이해관계가 얽힌 충돌을 뜻합니다. 오너들이 실질적으로 우려하는 것은 재산권을 둘러싼 법적 '분쟁'입니다."
+    },
+    {
+      q: "계약자 : 피보험자 : 수익자 = 할아버지 : 아버지 : _____ 구조의 세대생략 종신보험은 자산 이전에 효과적이다",
+      options: ["배우자", "형제", "손자", "법인"],
+      answer: 2,
+      explain: "할아버지(계약자)가 보험료를 납부하고, 아버지(피보험자) 사망 시 손자(수익자)에게 보험금이 직접 지급됩니다. 한 세대를 건너뛰어 자산이 이전되는 것이 이 구조의 핵심입니다."
+    },
+  ];
+
+  // ===== 미달 레벨 =====
+  const LEVELS = [
+    {
+      title: '자산가와의 거리, 아직 멀리 있습니다',
+      desc:  '자산가 고객이 아직 낯선 단계입니다'
+    },
+    {
+      title: '자산가와의 거리, 가까워지고 있습니다',
+      desc:  '자산가 고객의 핵심에 가까워지고 있습니다. 다만 깊이가 더 필요한 단계입니다'
+    },
+    {
+      title: '자산가와의 거리, 거의 다 왔습니다',
+      desc:  '자산가 고객의 마스터에 가깝습니다! 최고가 되기위한 한걸음만 남았습니다'
+    },
+  ];
+
+  let current = 0, correctCount = 0, answered = false;
+
+  const screens = {
+    intro:   document.getElementById('screen-intro'),
+    quiz:    document.getElementById('screen-quiz'),
+    pass:    document.getElementById('screen-pass'),
+    partial: document.getElementById('screen-partial'),
+  };
+
+  function showScreen(name){
+    Object.values(screens).forEach(s => s.classList.remove('active'));
+    screens[name].classList.add('active');
+  }
+
+  function buildProgress(){
+    const track = document.getElementById('progress-track');
+    track.innerHTML = '';
+    QUIZ.forEach((_, i) => {
+      const dot = document.createElement('div');
+      dot.className = 'progress-dot';
+      if(i < current)   dot.classList.add('done');
+      if(i === current) dot.classList.add('now');
+      track.appendChild(dot);
+    });
+  }
+
+  function renderQuestion(){
+    answered = false;
+    const item = QUIZ[current];
+    document.getElementById('quiz-tag').textContent   = `문항 ${current+1} / ${QUIZ.length}`;
+    document.getElementById('quiz-score').textContent = `정답 ${correctCount}개`;
+    document.getElementById('q-number').textContent   = `Q${current+1}.`;
+    document.getElementById('q-text').textContent     = item.q;
+    buildProgress();
+
+    const optWrap = document.getElementById('options');
+    optWrap.innerHTML = '';
+    ['A','B','C','D'].forEach((letter, idx) => {
+      const btn = document.createElement('button');
+      btn.className = 'opt';
+      btn.innerHTML = `<span class="mark">${letter}</span><span>${item.options[idx]}</span>`;
+      btn.addEventListener('click', () => handleAnswer(idx));
+      optWrap.appendChild(btn);
+    });
+
+    document.getElementById('feedback').classList.remove('show','right','miss');
+    document.getElementById('btn-next').classList.remove('show');
+  }
+
+  function handleAnswer(idx){
+    if(answered) return;
+    answered = true;
+    const item = QUIZ[current];
+    document.querySelectorAll('.opt').forEach((el, i) => {
+      el.disabled = true;
+      if(i === item.answer) el.classList.add('correct');
+      if(i === idx && idx !== item.answer) el.classList.add('wrong');
+    });
+
+    const isRight = idx === item.answer;
+    if(isRight) correctCount++;
+    document.getElementById('quiz-score').textContent = `정답 ${correctCount}개`;
+
+    const fb = document.getElementById('feedback');
+    fb.classList.add('show', isRight ? 'right' : 'miss');
+    document.getElementById('fb-label').textContent = isRight ? '✓ 정답입니다' : '✗ 오답입니다';
+    document.getElementById('fb-body').textContent  = item.explain;
+
+    const nextBtn = document.getElementById('btn-next');
+    nextBtn.classList.add('show');
+    nextBtn.textContent = current === QUIZ.length - 1 ? '결과 확인하기' : '다음 문항';
+  }
+
+  document.getElementById('btn-next').addEventListener('click', () => {
+    current++;
+    current >= QUIZ.length ? finishQuiz() : renderQuestion();
+  });
+
+  function finishQuiz(){
+    if(correctCount === QUIZ.length){
+      document.getElementById('pass-score').textContent   = `${correctCount} / ${QUIZ.length}`;
+      document.getElementById('entry-number').textContent = 'AH-' + String(Math.floor(1000 + Math.random() * 9000));
+      showScreen('pass');
+      launchConfetti();
+    } else {
+      const lv = LEVELS[correctCount];
+      document.getElementById('partial-title').textContent = lv.title;
+      document.getElementById('level-desc').textContent    = lv.desc;
+      document.getElementById('partial-score').textContent = `${correctCount} / ${QUIZ.length}`;
+      showScreen('partial');
+    }
+  }
+
+  // ===== 폭죽 =====
+  function launchConfetti(){
+    const canvas = document.getElementById('confetti-canvas');
+    const ctx    = canvas.getContext('2d');
+    canvas.width  = window.innerWidth;
+    canvas.height = window.innerHeight;
+    canvas.style.display = 'block';
+
+    const colors = ['#00C2B2','#F0A500','#FF6B6B','#6C63FF','#FFE66D','#4ECDC4','#FF9F43','#A8E6CF'];
+    const pieces = Array.from({length: 160}, () => ({
+      x:      Math.random() * canvas.width,
+      y:      Math.random() * -300 - 10,
+      w:      Math.random() * 11 + 5,
+      h:      Math.random() * 6  + 3,
+      color:  colors[Math.floor(Math.random() * colors.length)],
+      rot:    Math.random() * Math.PI * 2,
+      rotV:   (Math.random() - 0.5) * 0.14,
+      vy:     Math.random() * 4 + 2,
+      vx:     (Math.random() - 0.5) * 2.5,
+      opacity: 1,
+    }));
+
+    const startTime = Date.now();
+
+    function draw(){
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      let alive = false;
+      const elapsed = Date.now() - startTime;
+      pieces.forEach(p => {
+        p.y  += p.vy;
+        p.x  += p.vx;
+        p.rot += p.rotV;
+        if(elapsed > 2800) p.opacity = Math.max(0, p.opacity - 0.018);
+        if(p.y < canvas.height + 20 && p.opacity > 0) alive = true;
+        ctx.save();
+        ctx.globalAlpha = p.opacity;
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.rot);
+        ctx.fillStyle = p.color;
+        ctx.fillRect(-p.w/2, -p.h/2, p.w, p.h);
+        ctx.restore();
+      });
+      if(alive) requestAnimationFrame(draw);
+      else canvas.style.display = 'none';
+    }
+    requestAnimationFrame(draw);
+  }
+
+  document.getElementById('btn-start').addEventListener('click', () => {
+    current = 0; correctCount = 0;
+    showScreen('quiz');
+    renderQuestion();
+  });
+  document.getElementById('btn-retry-pass').addEventListener('click', () => showScreen('intro'));
+  document.getElementById('btn-retry-partial').addEventListener('click', () => {
+    current = 0; correctCount = 0;
+    showScreen('quiz');
+    renderQuestion();
+  });
+</script>
+
+</body>
+</html>
