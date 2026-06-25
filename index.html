@@ -435,7 +435,7 @@
           <div class="rank-row"><span>추첨 안내</span><b>강의 신청 후 결과 개별 연락</b></div>
         </div>
 
-        <a class="cta-btn" id="cta-apply" href="https://forms.gle/RKUfd73xEtCpRsAR8" target="_blank" rel="noopener">무료 수강 추첨 신청하기 →</a>
+        <a class="cta-btn" id="cta-apply" href="#" target="_blank" rel="noopener">무료 수강 추첨 신청하기 →</a>
         <button class="cta-sub" id="btn-retry-pass">처음으로 돌아가기</button>
       </div>
     </section>
@@ -472,31 +472,31 @@
     {
       q: "고객 상담 시 재무적 요소도 중요하지만, _____ 요소가 핵심이다",
       options: ["감정적", "행동적", "비재무적", "관계적"],
-      answer: 2,
+      a: "1ot5n8x",
       explain: "자산가 상담에서는 수익률이나 절세 구조보다 가족 관계, 사업 계승, 심리적 안도감 등 비재무적 요소가 실제 의사결정에 더 큰 영향을 미칩니다."
     },
     {
       q: "가족 간의 _____을 걱정하는 사업체 오너가 증가하고 있다",
       options: ["갈등", "분쟁", "불화", "단절"],
-      answer: 1,
+      a: "dhamzn",
       explain: "'갈등'과 '불화'는 감정적 충돌이지만, '분쟁'은 상속·지분·사업 양도 등 법적·경제적 이해관계가 얽힌 충돌을 뜻합니다. 오너들이 실질적으로 우려하는 것은 재산권을 둘러싼 법적 '분쟁'입니다."
     },
     {
       q: "계약자 : 피보험자 : 수익자 = 할아버지 : 아버지 : _____ 구조의 세대생략 종신보험은 자산 이전에 효과적이다",
       options: ["배우자", "형제", "손자", "법인"],
-      answer: 2,
+      a: "10ahh8v",
       explain: "할아버지(계약자)가 보험료를 납부하고, 아버지(피보험자) 사망 시 손자(수익자)에게 보험금이 직접 지급됩니다. 한 세대를 건너뛰어 자산이 이전되는 것이 이 구조의 핵심입니다."
     },
     {
       q: "7월 토요특강 홈페이지 메인 이미지에 안경은 무슨색일까요?",
       options: ["주황색", "파란색", "무지개색", "안경은 없다"],
-      answer: 0,
+      a: "1p4w4he",
       explain: "홈페이지 메인 이미지의 안경은 주황색입니다. 혹시 아직 홈페이지를 방문 안 해보셨다면, 강의 안내도 꼭 확인해보세요!"
     },
     {
       q: "7월 토요특강 홈페이지에서 최은주 강사의 노블리치 센터 경력은 몇 년인가요?",
       options: ["25년", "20년", "15년", "10년"],
-      answer: 2,
+      a: "1mesgnh",
       explain: "최은주 강사의 노블리치 센터 경력은 15년입니다. 홈페이지에서 더 자세한 강사 소개를 확인해보세요!"
     },
   ];
@@ -531,6 +531,34 @@
 
   let current = 0, correctCount = 0, answered = false;
   let timerId = null, timeLeft = 0;
+  let userAnswers = [];
+
+  // ===== 정답 검증 & 신청 폼 링크 난독화 =====
+  // 정답은 해시(a)로만 저장되고, 신청 폼 URL은 인코딩되어 있다가
+  // 전 문항 정답일 때 사용자의 정답 시퀀스로만 복호화됩니다(평문 노출 방지).
+  const _SALT = 'rdq-2026';
+  const _KEYSALT = 'aimhigh!';
+  const _FORM_ENC = 'WkVGQEFbRkIOBhUFUhxWXlUdMyI4Dg1QW1l3RXFAYBIoP1A=';
+
+  function _fnv(s){
+    let x = 0x811c9dc5;
+    for(let i = 0; i < s.length; i++){ x ^= s.charCodeAt(i); x = Math.imul(x, 0x01000193); }
+    return (x >>> 0).toString(36);
+  }
+  function correctIndexOf(qi){
+    const item = QUIZ[qi];
+    for(let k = 0; k < item.options.length; k++){
+      if(_fnv(qi + ':' + k + _SALT) === item.a) return k;
+    }
+    return -1;
+  }
+  function decodeForm(ans){
+    const key = ans.join('') + _KEYSALT;
+    const bin = atob(_FORM_ENC);
+    let o = '';
+    for(let i = 0; i < bin.length; i++) o += String.fromCharCode(bin.charCodeAt(i) ^ key.charCodeAt(i % key.length));
+    return o;
+  }
 
   const screens = {
     intro:   document.getElementById('screen-intro'),
@@ -620,10 +648,12 @@
   function handleTimeout(){
     if(answered) return;
     answered = true;
+    userAnswers[current] = -1;
+    const correctIdx = correctIndexOf(current);
     const item = QUIZ[current];
     document.querySelectorAll('.opt').forEach((el, i) => {
       el.disabled = true;
-      if(i === item.answer) el.classList.add('correct');
+      if(i === correctIdx) el.classList.add('correct');
     });
 
     const fb = document.getElementById('feedback');
@@ -640,14 +670,16 @@
     if(answered) return;
     answered = true;
     stopTimer();
+    userAnswers[current] = idx;
+    const correctIdx = correctIndexOf(current);
     const item = QUIZ[current];
     document.querySelectorAll('.opt').forEach((el, i) => {
       el.disabled = true;
-      if(i === item.answer) el.classList.add('correct');
-      if(i === idx && idx !== item.answer) el.classList.add('wrong');
+      if(i === correctIdx) el.classList.add('correct');
+      if(i === idx && idx !== correctIdx) el.classList.add('wrong');
     });
 
-    const isRight = idx === item.answer;
+    const isRight = idx === correctIdx;
     if(isRight) correctCount++;
     document.getElementById('quiz-score').textContent = `정답 ${correctCount}개`;
 
@@ -671,6 +703,7 @@
     if(correctCount === QUIZ.length){
       document.getElementById('pass-score').textContent   = `${correctCount} / ${QUIZ.length}`;
       document.getElementById('entry-number').textContent = 'AH-' + String(Math.floor(1000 + Math.random() * 9000));
+      document.getElementById('cta-apply').href = decodeForm(userAnswers);
       showScreen('pass');
       launchConfetti();
     } else {
@@ -732,13 +765,13 @@
   }
 
   document.getElementById('btn-start').addEventListener('click', () => {
-    current = 0; correctCount = 0;
+    current = 0; correctCount = 0; userAnswers = [];
     showScreen('quiz');
     renderQuestion();
   });
   document.getElementById('btn-retry-pass').addEventListener('click', () => showScreen('intro'));
   document.getElementById('btn-retry-partial').addEventListener('click', () => {
-    current = 0; correctCount = 0;
+    current = 0; correctCount = 0; userAnswers = [];
     showScreen('quiz');
     renderQuestion();
   });
