@@ -347,6 +347,11 @@
   }
   .cta-btn:hover { background: #00A89A; box-shadow: 0 4px 16px rgba(0,194,178,0.28); }
   .cta-btn:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+  .cta-btn.disabled {
+    background: var(--muted-2);
+    cursor: default; pointer-events: none;
+    box-shadow: none;
+  }
 
   .cta-sub {
     margin-top: 14px; border: none; background: none;
@@ -806,7 +811,6 @@
     if(eventState() !== 'open'){ applyGate(); return; }
     if(correctCount === QUIZ.length){
       document.getElementById('pass-score').textContent = `${correctCount} / ${QUIZ.length}`;
-      document.getElementById('cta-apply').href = decodeForm(userAnswers);
       showScreen('pass');
       launchConfetti();
       issueEntryCode(userAnswers);
@@ -898,18 +902,50 @@
     });
   }
 
+  // 코드 발급 전까지 신청 버튼 잠금 + 대기 카운트다운
+  var applyWaitId = null;
+  function startApplyWait(){
+    var btn = document.getElementById('cta-apply');
+    btn.classList.add('disabled');
+    btn.removeAttribute('href');
+    var n = 3;
+    btn.textContent = '참가 코드 발급 중… ' + n;
+    if(applyWaitId) clearInterval(applyWaitId);
+    applyWaitId = setInterval(function(){
+      n--;
+      btn.textContent = n > 0 ? ('참가 코드 발급 중… ' + n) : '참가 코드 발급 중…';
+      if(n <= 0){ clearInterval(applyWaitId); applyWaitId = null; }
+    }, 1000);
+  }
+  function enableApply(href){
+    if(applyWaitId){ clearInterval(applyWaitId); applyWaitId = null; }
+    var btn = document.getElementById('cta-apply');
+    btn.classList.remove('disabled');
+    btn.setAttribute('href', href);
+    btn.textContent = '참가 코드로 신청하기 →';
+  }
+  function failApply(){
+    if(applyWaitId){ clearInterval(applyWaitId); applyWaitId = null; }
+    var btn = document.getElementById('cta-apply');
+    btn.classList.add('disabled');
+    btn.removeAttribute('href');
+    btn.textContent = '발급 실패 — 아래 코드를 눌러 재시도';
+  }
+
   function issueEntryCode(answers){
     var el = document.getElementById('entry-code');
     el.textContent = '발급 중…';
     el.removeAttribute('data-code');
+    startApplyWait();
     requestCode(answers).then(function(res){
       if(res && res.ok && res.code){
         el.textContent = res.code;
         el.setAttribute('data-code', res.code);
-        // 발급된 코드를 폼에 자동입력되도록 신청 링크에 첨부
-        document.getElementById('cta-apply').href = decodeForm(answers) + encodeURIComponent(res.code);
+        // 발급된 코드를 폼에 자동입력되도록 신청 링크에 첨부 + 버튼 활성화
+        enableApply(decodeForm(answers) + encodeURIComponent(res.code));
       } else {
         el.textContent = '발급 실패 — 눌러서 재시도';
+        failApply();
       }
     });
   }
@@ -925,6 +961,11 @@
     } else if(this.textContent.indexOf('재시도') !== -1){
       issueEntryCode(userAnswers);
     }
+  });
+
+  // 코드 발급 전(잠금 상태)엔 신청 클릭 차단
+  document.getElementById('cta-apply').addEventListener('click', function(e){
+    if(this.classList.contains('disabled') || !this.getAttribute('href')){ e.preventDefault(); }
   });
 
   // 페이지 로드 시 이벤트 기간에 따라 화면 결정
