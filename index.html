@@ -327,6 +327,14 @@
   }
   .rank-row + .rank-row { border-top: 1px solid var(--line); }
   .rank-row b { color: var(--navy); font-weight: 700; }
+  .entry-code { color: var(--teal); cursor: pointer; user-select: all; letter-spacing: 0.02em; }
+  .code-hint {
+    font-size: 12px; color: var(--muted);
+    background: var(--teal-lo);
+    border-radius: 8px; padding: 9px 12px;
+    margin: -8px 0 18px; line-height: 1.6;
+  }
+  .code-hint b { color: var(--teal); font-weight: 700; }
 
   .cta-btn {
     display: block; width: 100%; padding: 16px 0;
@@ -435,15 +443,17 @@
           </div>
         </div>
         <h2>전 문항 정답입니다! 🎉</h2>
-        <p class="desc">추첨 응모가 완료되었습니다.<br>전 문항 정답자 중 <b>추첨을 통해 3명</b>에게 무료 수강 자격이 부여됩니다.</p>
+        <p class="desc">아래 <b>참가 코드</b>를 신청 폼에 입력하면 응모가 완료됩니다.<br>전 문항 정답자 중 <b>추첨을 통해 3명</b>에게 무료 수강 자격이 부여됩니다.</p>
 
         <div class="rank-box">
           <div class="rank-row"><span>응시 결과</span><b id="pass-score">5 / 5</b></div>
-          <div class="rank-row"><span>응모 번호</span><b id="entry-number">—</b></div>
+          <div class="rank-row"><span>참가 코드</span><b id="entry-code" class="entry-code" title="클릭하면 복사됩니다">발급 중…</b></div>
           <div class="rank-row"><span>추첨 안내</span><b>강의 신청 후 결과 개별 연락</b></div>
         </div>
 
-        <a class="cta-btn" id="cta-apply" href="#" target="_blank" rel="noopener">무료 수강 추첨 신청하기 →</a>
+        <div class="code-hint">신청 폼의 <b>참가 코드</b> 칸에 위 코드를 입력해 주세요. 코드는 <b>1회만</b> 사용할 수 있습니다.</div>
+
+        <a class="cta-btn" id="cta-apply" href="#" target="_blank" rel="noopener">참가 코드로 신청하기 →</a>
         <button class="cta-sub" id="btn-retry-pass">처음으로 돌아가기</button>
       </div>
     </section>
@@ -500,6 +510,9 @@
   // 실제 운영값(6/26 08:30 ~ 6/27 08:30):
   // const EVENT_START = new Date('2026-06-26T08:30:00+09:00');
   // const EVENT_END   = new Date('2026-06-27T08:30:00+09:00');
+
+  // ===== 1회용 코드 백엔드 (Google Apps Script 웹앱) =====
+  const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbzDRuQMZt2qkgxLB6fomL6lb0ZwANbe_41_eoR2HpMIzSTJLSrsClykEM9cXf8xQ-22/exec';
 
   // ===== 퀴즈 데이터 =====
   const QUIZ = [
@@ -792,11 +805,11 @@
     stopTimer();
     if(eventState() !== 'open'){ applyGate(); return; }
     if(correctCount === QUIZ.length){
-      document.getElementById('pass-score').textContent   = `${correctCount} / ${QUIZ.length}`;
-      document.getElementById('entry-number').textContent = 'AH-' + String(Math.floor(1000 + Math.random() * 9000));
+      document.getElementById('pass-score').textContent = `${correctCount} / ${QUIZ.length}`;
       document.getElementById('cta-apply').href = decodeForm(userAnswers);
       showScreen('pass');
       launchConfetti();
+      issueEntryCode(userAnswers);
     } else {
       const lv = LEVELS[correctCount];
       document.getElementById('partial-title').textContent = lv.title;
@@ -867,6 +880,49 @@
     current = 0; correctCount = 0; userAnswers = [];
     showScreen('quiz');
     renderQuestion();
+  });
+
+  // ===== 1회용 코드 발급 (JSONP로 CORS 회피) =====
+  function requestCode(answers){
+    return new Promise(function(resolve){
+      var cbName = '_rdcb_' + Date.now() + '_' + Math.floor(Math.random() * 1e4);
+      var done = false;
+      var s = document.createElement('script');
+      function cleanup(){ try { delete window[cbName]; } catch(e){} if(s.parentNode) s.parentNode.removeChild(s); }
+      function finish(data){ if(done) return; done = true; cleanup(); resolve(data); }
+      window[cbName] = function(data){ finish(data); };
+      s.onerror = function(){ finish({ ok: false }); };
+      s.src = WEBAPP_URL + '?callback=' + cbName + '&ans=' + answers.join('');
+      document.body.appendChild(s);
+      setTimeout(function(){ finish({ ok: false }); }, 12000);
+    });
+  }
+
+  function issueEntryCode(answers){
+    var el = document.getElementById('entry-code');
+    el.textContent = '발급 중…';
+    el.removeAttribute('data-code');
+    requestCode(answers).then(function(res){
+      if(res && res.ok && res.code){
+        el.textContent = res.code;
+        el.setAttribute('data-code', res.code);
+      } else {
+        el.textContent = '발급 실패 — 눌러서 재시도';
+      }
+    });
+  }
+
+  // 코드 클릭: 발급됐으면 복사, 실패 상태면 재발급
+  document.getElementById('entry-code').addEventListener('click', function(){
+    var code = this.getAttribute('data-code');
+    if(code){
+      if(navigator.clipboard) navigator.clipboard.writeText(code).catch(function(){});
+      var self = this;
+      self.textContent = '복사됨 ✓';
+      setTimeout(function(){ self.textContent = code; }, 1000);
+    } else if(this.textContent.indexOf('재시도') !== -1){
+      issueEntryCode(userAnswers);
+    }
   });
 
   // 페이지 로드 시 이벤트 기간에 따라 화면 결정
