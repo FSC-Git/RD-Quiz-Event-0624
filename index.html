@@ -8,7 +8,7 @@
 <meta property="og:url"          content="https://fsc-git.github.io/RD-Quiz-Event-0624/">
 <meta property="og:title"        content="여러분과 자산가와의 거리는 얼마나 될까요?">
 <meta property="og:description"  content="전 문항을 맞추시면 특별한 선물의 기회를 드립니다!">
-<meta property="og:image"        content="https://fsc-git.github.io/RD-Quiz-Event-0624/thumbnail.png">
+<meta property="og:image"        content="https://fsc-git.github.io/RD-Quiz-Event-0624/thumbnail.png?v=2">
 <meta property="og:image:width"  content="1200">
 <meta property="og:image:height" content="630">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -158,7 +158,7 @@
   .quiz-tag { font-size: 12px; font-weight: 700; color: var(--teal); letter-spacing: 0.04em; }
   .quiz-score { font-size: 12px; color: var(--muted); }
 
-  .progress-track { display: flex; gap: 6px; margin-bottom: 26px; }
+  .progress-track { display: flex; gap: 6px; margin-bottom: 14px; }
   .progress-dot {
     flex: 1; height: 4px;
     background: var(--line);
@@ -167,6 +167,29 @@
   }
   .progress-dot.done { background: var(--teal); }
   .progress-dot.now  { background: var(--teal); opacity: 0.45; }
+
+  /* 타이머 */
+  .timer { display: flex; align-items: center; gap: 10px; margin-bottom: 22px; }
+  .timer-bar {
+    flex: 1; height: 6px;
+    background: var(--line);
+    border-radius: 6px; overflow: hidden;
+  }
+  .timer-fill {
+    height: 100%; width: 100%;
+    background: var(--teal);
+    border-radius: 6px;
+    transition: width 1s linear, background .3s ease;
+  }
+  .timer-fill.warn   { background: var(--gold); }
+  .timer-fill.danger { background: var(--crimson); }
+  .timer-num {
+    font-size: 12px; font-weight: 700;
+    color: var(--muted);
+    min-width: 34px; text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+  .timer-num.danger { color: var(--crimson); }
 
   .q-number {
     font-size: 12px; font-weight: 700;
@@ -376,6 +399,11 @@
       </div>
       <div class="progress-track" id="progress-track"></div>
 
+      <div class="timer" id="timer">
+        <div class="timer-bar"><div class="timer-fill" id="timer-fill"></div></div>
+        <span class="timer-num" id="timer-num">20초</span>
+      </div>
+
       <div class="q-number" id="q-number">Q1.</div>
       <h2 class="q-text" id="q-text"></h2>
       <div class="options" id="options"></div>
@@ -496,7 +524,12 @@
     },
   ];
 
+  // ===== 문항별 제한시간(초) =====
+  // 기본 20초. 특정 문항만 다르게 주려면 QUIZ 항목에 time: 30 처럼 추가하면 됩니다.
+  const TIME_LIMIT = 20;
+
   let current = 0, correctCount = 0, answered = false;
+  let timerId = null, timeLeft = 0;
 
   const screens = {
     intro:   document.getElementById('screen-intro'),
@@ -543,11 +576,69 @@
 
     document.getElementById('feedback').classList.remove('show','right','miss');
     document.getElementById('btn-next').classList.remove('show');
+
+    startTimer();
+  }
+
+  // ===== 타이머 =====
+  function startTimer(){
+    stopTimer();
+    const limit = QUIZ[current].time || TIME_LIMIT;
+    timeLeft = limit;
+    const fill = document.getElementById('timer-fill');
+    const num  = document.getElementById('timer-num');
+    fill.classList.remove('warn','danger');
+    num.classList.remove('danger');
+    num.textContent = limit + '초';
+    // 트랜지션 없이 바를 100%로 즉시 리셋
+    fill.style.transition = 'none';
+    fill.style.width = '100%';
+    void fill.offsetWidth;
+    fill.style.transition = '';
+    timerId = setInterval(tick, 1000);
+  }
+
+  function tick(){
+    timeLeft--;
+    const limit = QUIZ[current].time || TIME_LIMIT;
+    const fill = document.getElementById('timer-fill');
+    const num  = document.getElementById('timer-num');
+    const shown = Math.max(0, timeLeft);
+    fill.style.width = (shown / limit * 100) + '%';
+    num.textContent = shown + '초';
+    fill.classList.toggle('warn',   timeLeft <= limit * 0.5 && timeLeft > limit * 0.25);
+    fill.classList.toggle('danger', timeLeft <= limit * 0.25);
+    num.classList.toggle('danger',  timeLeft <= limit * 0.25);
+    if(timeLeft <= 0){ stopTimer(); handleTimeout(); }
+  }
+
+  function stopTimer(){
+    if(timerId){ clearInterval(timerId); timerId = null; }
+  }
+
+  function handleTimeout(){
+    if(answered) return;
+    answered = true;
+    const item = QUIZ[current];
+    document.querySelectorAll('.opt').forEach((el, i) => {
+      el.disabled = true;
+      if(i === item.answer) el.classList.add('correct');
+    });
+
+    const fb = document.getElementById('feedback');
+    fb.classList.add('show', 'miss');
+    document.getElementById('fb-label').textContent = '✗ 시간 초과';
+    document.getElementById('fb-body').textContent  = item.explain;
+
+    const nextBtn = document.getElementById('btn-next');
+    nextBtn.classList.add('show');
+    nextBtn.textContent = current === QUIZ.length - 1 ? '결과 확인하기' : '다음 문항';
   }
 
   function handleAnswer(idx){
     if(answered) return;
     answered = true;
+    stopTimer();
     const item = QUIZ[current];
     document.querySelectorAll('.opt').forEach((el, i) => {
       el.disabled = true;
@@ -575,6 +666,7 @@
   });
 
   function finishQuiz(){
+    stopTimer();
     if(correctCount === QUIZ.length){
       document.getElementById('pass-score').textContent   = `${correctCount} / ${QUIZ.length}`;
       document.getElementById('entry-number').textContent = 'AH-' + String(Math.floor(1000 + Math.random() * 9000));
