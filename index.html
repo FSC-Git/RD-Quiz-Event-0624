@@ -451,7 +451,7 @@
           <div class="rank-row"><span>추첨 안내</span><b>강의 신청 후 결과 개별 연락</b></div>
         </div>
 
-        <div class="code-hint">신청 폼의 <b>참가 코드</b> 칸에 위 코드를 입력해 주세요. 코드는 <b>1회만</b> 사용할 수 있습니다.</div>
+        <div class="code-hint"><b>신청하기</b>를 누르면 위 <b>참가 코드</b>가 폼에 자동 입력됩니다. 코드는 <b>1회만</b> 사용할 수 있습니다.</div>
 
         <a class="cta-btn" id="cta-apply" href="#" target="_blank" rel="noopener">참가 코드로 신청하기 →</a>
         <button class="cta-sub" id="btn-retry-pass">처음으로 돌아가기</button>
@@ -585,7 +585,7 @@
   // 전 문항 정답일 때 사용자의 정답 시퀀스로만 복호화됩니다(평문 노출 방지).
   const _SALT = 'rdq-2026';
   const _KEYSALT = 'aimhigh!';
-  const _FORM_ENC = 'WkVGQEFbRkIOBhUFUhxWXlUdMyI4Dg1QW1l3RXFAYBIoP1A=';
+  const _FORM_ENC = 'WkVGQEFbRkIMBgQbD1VeXVdeBEcOBwRIDk5AXEEfVk4MQlkvJiFRY31hVWcPAAgPET5YaEdyd2RRJS0uLyE1LxNfXnhIX1BcFCoNFzt0BQkKSmUlAkAMIR8fDkRYV0dUDhsAVxwUGBxCQW1FQA1PCAYdFREPAAAABwpRUVhbXFo=';
 
   function _fnv(s){
     let x = 0x811c9dc5;
@@ -906,6 +906,8 @@
       if(res && res.ok && res.code){
         el.textContent = res.code;
         el.setAttribute('data-code', res.code);
+        // 발급된 코드를 폼에 자동입력되도록 신청 링크에 첨부
+        document.getElementById('cta-apply').href = decodeForm(answers) + encodeURIComponent(res.code);
       } else {
         el.textContent = '발급 실패 — 눌러서 재시도';
       }
