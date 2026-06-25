@@ -933,7 +933,10 @@
     showScreen('quiz');
     renderQuestion();
   });
-  document.getElementById('btn-retry-pass').addEventListener('click', () => showScreen('intro'));
+  document.getElementById('btn-retry-pass').addEventListener('click', () => {
+    if(applyWaitId){ clearInterval(applyWaitId); applyWaitId = null; }  // 발급 대기 타이머 정리
+    showScreen('intro');
+  });
   document.getElementById('btn-retry-partial').addEventListener('click', () => {
     if(eventState() !== 'open'){ applyGate(); return; }
     current = 0; correctCount = 0; userAnswers = [];
@@ -953,7 +956,7 @@
       s.onerror = function(){ finish({ ok: false }); };
       s.src = WEBAPP_URL + '?callback=' + cbName + '&ans=' + answers.join('');
       document.body.appendChild(s);
-      setTimeout(function(){ finish({ ok: false }); }, 12000);
+      setTimeout(function(){ finish({ ok: false }); }, 6000);
     });
   }
 
@@ -987,22 +990,31 @@
     btn.textContent = '발급 실패 — 아래 코드를 눌러 재시도';
   }
 
-  function issueEntryCode(answers){
+  function issueEntryCode(answers, attempt){
+    attempt = attempt || 1;
     var el = document.getElementById('entry-code');
     el.textContent = '발급 중…';
     el.removeAttribute('data-code');
     startApplyWait();
-    requestCode(answers).then(function(res){
-      if(res && res.ok && res.code){
-        el.textContent = res.code;
-        el.setAttribute('data-code', res.code);
-        // 발급된 코드를 폼에 자동입력되도록 신청 링크에 첨부 + 버튼 활성화
-        enableApply(decodeForm(answers) + encodeURIComponent(res.code));
-      } else {
-        el.textContent = '발급 실패 — 눌러서 재시도';
-        failApply();
-      }
-    });
+    // 1번째 시도: 0~1초 랜덤(동시 접속 부하 분산). 재시도: 선형 백오프 + 랜덤.
+    var jitter = attempt === 1
+      ? Math.random() * 1000
+      : (attempt - 1) * 1000 + Math.random() * 1000;
+    setTimeout(function(){
+      requestCode(answers).then(function(res){
+        if(res && res.ok && res.code){
+          el.textContent = res.code;
+          el.setAttribute('data-code', res.code);
+          // 발급된 코드를 폼에 자동입력되도록 신청 링크에 첨부 + 버튼 활성화
+          enableApply(decodeForm(answers) + encodeURIComponent(res.code));
+        } else if(attempt < 3){
+          issueEntryCode(answers, attempt + 1);  // 최대 3회 자동 재시도
+        } else {
+          el.textContent = '발급 실패 — 눌러서 재시도';
+          failApply();
+        }
+      });
+    }, jitter);
   }
 
   // 코드 클릭: 발급됐으면 복사, 실패 상태면 재발급
