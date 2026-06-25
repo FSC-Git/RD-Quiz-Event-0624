@@ -131,6 +131,28 @@
   }
   .rules li b { color: var(--navy); font-weight: 700; }
 
+  /* 마감 카운트다운 배너 */
+  .deadline {
+    display: flex; align-items: center; justify-content: center;
+    gap: 10px;
+    background: var(--navy);
+    border-radius: 10px;
+    padding: 13px 16px;
+    margin-bottom: 16px;
+  }
+  .deadline-label {
+    font-size: 12px; font-weight: 500;
+    color: rgba(255,255,255,0.65);
+    letter-spacing: 0.02em;
+  }
+  .deadline-time {
+    font-size: 18px; font-weight: 700;
+    color: var(--teal);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.02em;
+  }
+  .deadline.ending .deadline-time { color: var(--crimson); }
+
   .start-btn {
     width: 100%;
     padding: 16px 0;
@@ -410,6 +432,11 @@
         </ul>
       </div>
 
+      <div class="deadline" id="intro-deadline">
+        <span class="deadline-label">이벤트 마감까지</span>
+        <span class="deadline-time" id="intro-countdown">--:--:--</span>
+      </div>
+
       <button class="start-btn" id="btn-start">퀴즈 풀어보기</button>
     </section>
 
@@ -508,13 +535,10 @@
 
 <script>
   // ===== 이벤트 운영 기간 (KST 한국시간 고정) =====
-  // ⚠️ [임시] 테스트용: 지금 퀴즈가 보이도록 오픈 상태로 열어둠.
-  //    런칭 전, 아래 '실제 운영값' 두 줄의 주석을 풀고 이 임시 두 줄을 지우세요.
+  // 지금 바로 오픈 → 토요일(6/27) 08:30 마감.
+  // START는 과거로 둬서 '오픈 전' 안내 없이 즉시 열림.
   const EVENT_START = new Date('2026-06-25T00:00:00+09:00');
-  const EVENT_END   = new Date('2026-06-30T23:59:00+09:00');
-  // 실제 운영값(6/26 08:30 ~ 6/27 08:30):
-  // const EVENT_START = new Date('2026-06-26T08:30:00+09:00');
-  // const EVENT_END   = new Date('2026-06-27T08:30:00+09:00');
+  const EVENT_END   = new Date('2026-06-27T08:30:00+09:00');
 
   // ===== 1회용 코드 백엔드 (Google Apps Script 웹앱) =====
   const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbzDRuQMZt2qkgxLB6fomL6lb0ZwANbe_41_eoR2HpMIzSTJLSrsClykEM9cXf8xQ-22/exec';
@@ -643,6 +667,37 @@
     const p = n => String(n).padStart(2, '0');
     return `${p(Math.floor(t/3600))}:${p(Math.floor((t%3600)/60))}:${p(t%60)}`;
   }
+  function dhms(ms){
+    let t = Math.max(0, Math.floor(ms / 1000));
+    const d = Math.floor(t / 86400); t -= d * 86400;
+    const p = n => String(n).padStart(2, '0');
+    const hh = p(Math.floor(t/3600)), mm = p(Math.floor((t%3600)/60)), ss = p(t%60);
+    return (d > 0 ? d + '일 ' : '') + `${hh}:${mm}:${ss}`;
+  }
+
+  // ===== 마감까지 남은 시간 카운트다운 (인트로 화면) =====
+  let deadlineId = null;
+  function startDeadline(){
+    if(deadlineId){ clearInterval(deadlineId); deadlineId = null; }
+    const banner = document.getElementById('intro-deadline');
+    const el = document.getElementById('intro-countdown');
+    const tick = () => {
+      const diff = EVENT_END.getTime() - Date.now();
+      if(diff <= 0){
+        clearInterval(deadlineId); deadlineId = null;
+        stopTimer();
+        applyGate();   // 마감 → closed 화면
+        return;
+      }
+      el.textContent = dhms(diff);
+      banner.classList.toggle('ending', diff <= 60 * 60 * 1000); // 1시간 이하 빨간색
+    };
+    tick();
+    deadlineId = setInterval(tick, 1000);
+  }
+  function stopDeadline(){
+    if(deadlineId){ clearInterval(deadlineId); deadlineId = null; }
+  }
 
   let countdownId = null;
   function renderClosed(state){
@@ -676,8 +731,8 @@
   }
   function applyGate(){
     const st = eventState();
-    if(st === 'open'){ showScreen('intro'); }
-    else { renderClosed(st); showScreen('closed'); }
+    if(st === 'open'){ showScreen('intro'); startDeadline(); }
+    else { stopDeadline(); renderClosed(st); showScreen('closed'); }
   }
 
   function buildProgress(){
